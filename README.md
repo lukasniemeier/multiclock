@@ -4,6 +4,7 @@ This Windows 8.1 shell extension displays an additional clock on each secondary 
 
 ## Install
 
+0. Install the [Visual C++ Redistributable Packages for Visual Studio 2013](http://www.microsoft.com/en-us/download/details.aspx?id=40784)
 1. Copy MultiClock.exe and MultiClock.dll in some folder you remember.
 2. Execute MultiClock.exe.
 3. A clock icon should appear in your _systray_.
@@ -15,6 +16,8 @@ This Windows 8.1 shell extension displays an additional clock on each secondary 
 
 ## Troubleshooting
 
+* I get a _System Error_ stating that I'm missing _mfc120u.dll_!
+  1. I told you to install the [Visual C++ Redistributable Packages for Visual Studio 2013](http://www.microsoft.com/en-us/download/details.aspx?id=40784)!
 * There is no clock icon in my _systray_!
   1. Is MultiClock.exe running? Check the Task Manager.
   2. Is there some error popup when starting MultiClock.exe?
