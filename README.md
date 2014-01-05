@@ -26,4 +26,4 @@ This Windows 8.1 shell extension displays an additional clock on each secondary 
 
 ## Building
 
-Build this shell extension with Visual Studio 2013, there are no thrid-party libraries used.
+Build this shell extension with Visual Studio 2013, there are no third-party libraries used.
