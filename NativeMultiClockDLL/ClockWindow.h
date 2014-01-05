@@ -24,15 +24,13 @@ public:
 
 	BEGIN_MSG_MAP(ClockWindow)
 		MESSAGE_HANDLER(WM_CREATE, OnCreate)
-		/*MESSAGE_HANDLER(WM_MOUSEMOVE, OnMouseMove)
-		MESSAGE_HANDLER(WM_NCMOUSEMOVE, OnMouseMove)
-		MESSAGE_HANDLER(WM_MOUSELEAVE, OnMouseLeave)
-		MESSAGE_HANDLER(WM_NCMOUSELEAVE, OnMouseLeave)*/
 		MESSAGE_HANDLER(WM_INITMENU, OnInitMenu);
 		MESSAGE_HANDLER(WM_CLOSE, OnClose)
 	END_MSG_MAP()
 
 	ClockWindow();
+
+	virtual void OnFinalMessage(HWND hwnd);
 
 	void Refresh();
 	LRESULT OnLeftButtonUp(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
@@ -56,11 +54,13 @@ protected:
 	void RenderClickedState(Gdiplus::Graphics* graphics, int width, int height);
 	
 	std::wstring GetTimeString(int maxHeight);
+	void MoveClockFlyout();
 
 	LRESULT OnCreate(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
 	LRESULT OnClose(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
 
 private:
+	ULONG_PTR gdiplusToken;
 	HWND toolTipWindow;
 	TOOLINFOW toolTipInfo;
 	TRACKMOUSEEVENT trackMouseEventInfo;

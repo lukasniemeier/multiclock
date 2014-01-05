@@ -112,15 +112,6 @@ void ClockWindow::DrawClockControl(Graphics* graphics, int width, int height)
 
 void ClockWindow::Refresh()
 {
-	GdiplusStartupInput gdiplusStartupInput;
-	ULONG_PTR gdiplusToken;
-	Status status = GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
-	if (status != Status::Ok)
-	{
-		Beep(1200, 2000);
-		return;
-	}
-
 	RECT clientRect;
 	GetClientRect(&clientRect);
 	int width = clientRect.right - clientRect.left;
@@ -128,7 +119,7 @@ void ClockWindow::Refresh()
 
 	// Draw the control...
 	Bitmap* bitmap = new Bitmap(width, height, PixelFormat32bppPARGB);
-	status = bitmap->GetLastStatus();
+	Status status = bitmap->GetLastStatus();
 	if (status != Status::Ok)
 	{
 		Beep(200, 200);
@@ -160,6 +151,4 @@ void ClockWindow::Refresh()
 	::DeleteObject(hbitmap);
 	::DeleteDC(hDC);
 	::ReleaseDC(NULL, hdcScreen);
-
-	::GdiplusShutdown(gdiplusToken);
 }

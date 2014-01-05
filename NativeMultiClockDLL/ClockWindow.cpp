@@ -1,6 +1,9 @@
 #include "ClockWindow.h"
 #include <WindowsX.h>
 
+#define FLYOUT_MARGIN 16
+#define WM_USER_SHOW_FLYOUT (WM_USER + 102)
+
 BOOL CALLBACK SearchClockWidget(HWND hwnd, LPARAM lParam)
 {
 	bool result = true;
@@ -22,6 +25,19 @@ ClockWindow::ClockWindow()
 	isClicked = false;
 
 	trackMouseEventInfo.cbSize = sizeof(TRACKMOUSEEVENT);
+
+	Gdiplus::GdiplusStartupInput gdiplusStartupInput;
+	Gdiplus::Status status = GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
+	if (status != Gdiplus::Status::Ok)
+	{
+		Beep(1200, 2000);
+		return;
+	}
+}
+
+void ClockWindow::OnFinalMessage(HWND hwnd)
+{
+	Gdiplus::GdiplusShutdown(gdiplusToken);
 }
 
 std::wstring ClockWindow::GetTimeString(int maxHeight)
@@ -71,15 +87,46 @@ LRESULT ClockWindow::OnLeftButtonUp(UINT uMsg, WPARAM wParam, LPARAM lParam, BOO
 	return 0;
 }
 
+void ClockWindow::MoveClockFlyout()
+{
+	HWND flyout = ::FindWindowEx(nullptr, nullptr, L"ClockFlyoutWindow", nullptr);
+	if (flyout != nullptr)
+	{
+		RECT flyoutRect;
+		::GetWindowRect(flyout, &flyoutRect);
+
+		::ShowWindow(flyout, SW_HIDE);
+
+		// TODO: correct positioning for LEFT/RIGHT taskbar
+
+		RECT trayRect;
+		::GetWindowRect(this->GetParent(), &trayRect);
+
+		long flyoutHeight = flyoutRect.bottom - flyoutRect.top + FLYOUT_MARGIN;
+		long flyoutWidth = flyoutRect.right - flyoutRect.left + FLYOUT_MARGIN;
+
+		::SetWindowPos(flyout, nullptr,
+			trayRect.right - flyoutWidth, trayRect.top - flyoutHeight,
+			0, 0, SWP_NOSIZE | SWP_NOZORDER);
+
+		::ShowWindow(flyout, SW_SHOW);
+	}
+}
+
 LRESULT ClockWindow::OnLeftButtonDown(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
 {
+	if (toolTipWindow != nullptr)
+	{
+		::SendMessage(toolTipWindow, TTM_TRACKACTIVATE, (WPARAM)FALSE, (LPARAM)&toolTipInfo);
+	}
+
 	HWND clockWidget = ClockWindow::GetOriginalClock();
+	if (clockWidget != nullptr)
+	{
+		::SendMessage(clockWidget, WM_USER_SHOW_FLYOUT, 0x1, 0x0);
+		MoveClockFlyout();
+	}
 
-	SendMessage(clockWidget, WM_USER + 104, 0x3, 0x0);
-	SendMessage(clockWidget, WM_USER + 102, 0x1, 0x0);
-	SendMessage(clockWidget, WM_USER + 104, 0x2, 0x0);
-
-	//SendMessage(clockWidget, WM_USER + 104, 0x2, 0x0); // DISPLAYS HIGHLIGHT
 	isClicked = true;
 	Refresh();
 
@@ -105,10 +152,6 @@ LRESULT ClockWindow::OnMouseMove(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& 
 {
 	return 0;
 }
-
-/*#pragma comment(linker,"\"/manifestdependency:type='win32' \
-name='Microsoft.Windows.Common-Controls' version='6.0.0.0' \
-processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")*/
 
 LRESULT ClockWindow::OnMouseHover(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
 {
@@ -146,18 +189,22 @@ LRESULT ClockWindow::OnMouseHover(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL&
 	Gdiplus::Font font(context, GetWindowFont(toolTipWindow));
 	ReleaseDC(context);
 	Gdiplus::Status status = g.MeasureString(toolTipInfo.lpszText, -1, &font, { 0.0f, 0.0f, }, &rect);
-
-	/*
-	// TODO: fit in screen, position next to taskbar!
-	RECT rc;
-	GetWindowRect(&rc);
-	rc.left = (LONG) -rect.GetRight();
-	rc.top -= (LONG) rect.GetBottom();
+	
+	// TODO: positioning of tooltip for LEFT/RIGHT toolbar
+	RECT rc = { 0, 0, (LONG) ::ceil(rect.Width), (LONG) ::ceil(rect.Height) };
 	::SendMessage(toolTipWindow, TTM_ADJUSTRECT, TRUE, (LPARAM)&rc);
-	rc.left -= rc.right;*/
+
+	LONG toolTipWidth = rc.right - rc.left;
+	LONG toolTipHeight = rc.bottom - rc.top;
+
+	RECT trayRect;
+	::GetWindowRect(this->GetParent(), &trayRect);
+
+	LONG toolTipX = trayRect.right - toolTipWidth;
+	LONG toolTipY = trayRect.top - toolTipHeight;
 
 	::SendMessage(toolTipWindow, TTM_UPDATETIPTEXT, 0, (LPARAM)&toolTipInfo);
-	//::SendMessage(toolTipWindow, TTM_TRACKPOSITION, 0, (LPARAM)MAKELONG(rc.left, rc.top));
+	::SendMessage(toolTipWindow, TTM_TRACKPOSITION, 0, (LPARAM)MAKELONG(toolTipX, toolTipY));
 	::SendMessage(toolTipWindow, TTM_TRACKACTIVATE, (WPARAM)TRUE, (LPARAM)&toolTipInfo);
 	return 0;
 }
@@ -273,21 +320,6 @@ LRESULT ClockWindow::OnClose(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHan
 	::RemoveWindowSubclass(clock, ClockWindow::OriginalClockSubclassProc, 1);
 	DestroyWindow();
 	return 0;
-}
-
-HWND GlobalClockWidget;
-
-HWND ClockWindow::GetOriginalClock()
-{
-	if (!::IsWindow(GlobalClockWidget))
-	{
-		HWND tray = ::FindWindow(L"Shell_TrayWnd", L"");
-		HWND trayNotify = ::FindWindowEx(tray, nullptr, L"TrayNotifyWnd", L"");
-		HWND clockWidget;
-		::EnumChildWindows(trayNotify, SearchClockWidget, (LPARAM)&clockWidget);
-		GlobalClockWidget = clockWidget;
-	}
-	return GlobalClockWidget;
 }
 
 LRESULT CALLBACK ClockWindow::OriginalClockSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData)
@@ -443,4 +475,19 @@ LRESULT CALLBACK ClockWindow::WorkerWSubclassProc(HWND hWnd, UINT uMsg, WPARAM w
 		break;
 	}
 	return DefSubclassProc(hWnd, uMsg, wParam, lParam);
+}
+
+HWND GlobalClockWidget;
+
+HWND ClockWindow::GetOriginalClock()
+{
+	if (!::IsWindow(GlobalClockWidget))
+	{
+		HWND tray = ::FindWindow(L"Shell_TrayWnd", L"");
+		HWND trayNotify = ::FindWindowEx(tray, nullptr, L"TrayNotifyWnd", L"");
+		HWND clockWidget;
+		::EnumChildWindows(trayNotify, SearchClockWidget, (LPARAM)&clockWidget);
+		GlobalClockWidget = clockWidget;
+	}
+	return GlobalClockWidget;
 }

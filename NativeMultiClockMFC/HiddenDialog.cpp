@@ -32,6 +32,7 @@ void HiddenDialog::DoDataExchange(CDataExchange* pDX)
 
 BEGIN_MESSAGE_MAP(HiddenDialog, CDialog)
 	ON_MESSAGE(WM_CUSTOM_TRAY_ICON, &HiddenDialog::OnCustomTrayIcon)
+	ON_MESSAGE(WM_CLOSE, &HiddenDialog::OnClose)
 END_MESSAGE_MAP()
 
 void HiddenDialog::ShowContextMenu(bool expert)
@@ -108,6 +109,12 @@ afx_msg LRESULT HiddenDialog::OnCustomTrayIcon(WPARAM wParam, LPARAM lParam)
 	default:
 		break;
 	}
+	return 0;
+}
+
+afx_msg LRESULT HiddenDialog::OnClose(WPARAM wParam, LPARAM lParam)
+{
+	::PostQuitMessage(0);
 	return 0;
 }
 
