@@ -17,7 +17,7 @@ IMPLEMENT_DYNAMIC(HiddenDialog, CDialog)
 HiddenDialog::HiddenDialog(CWnd* pParent /*=NULL*/)
 	: CDialog(HiddenDialog::IDD, pParent)
 {
-
+	
 }
 
 HiddenDialog::~HiddenDialog()

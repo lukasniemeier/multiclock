@@ -14,6 +14,8 @@
 #define new DEBUG_NEW
 #endif
 
+#define HIDDEN_DIALOG_WINDOW_TEXT L"NativeMultiClock.HiddenDialog"
+
 BEGIN_MESSAGE_MAP(CNativeMultiClockMFCApp, CWinApp)
 END_MESSAGE_MAP()
 
@@ -25,14 +27,45 @@ CNativeMultiClockMFCApp::CNativeMultiClockMFCApp()
 	SetAppID(_T("NativeMultiClockMFC.AppID.NoVersion"));
 }
 
+bool TerminateOtherInstance()
+{
+	HWND other = ::FindWindow(nullptr, HIDDEN_DIALOG_WINDOW_TEXT);
+	if (other != nullptr)
+	{
+		::SendMessage(other, WM_CLOSE, 0x0, 0x0);
+		// Wait for the other process to terminate
+		Sleep(5000);
+	}
+	other = ::FindWindow(nullptr, HIDDEN_DIALOG_WINDOW_TEXT);
+	if (other != nullptr)
+	{
+		::MessageBox(NULL, L"Sorry but the other instance seems to be still running.\nPlease use the task manager to close all instances.", 
+			L"Error", MB_OK | MB_ICONERROR);
+		return true;
+	}
+	return true;
+}
+
 BOOL CNativeMultiClockMFCApp::InitInstance()
 {
 	appMutex = ::CreateMutex(nullptr, FALSE, L"NativeMultiClockMFC.AppMutex");
 	if (appMutex == nullptr || GetLastError() == ERROR_ALREADY_EXISTS)
 	{
-		::MessageBox(NULL, _T("An Instance of this application is already running..."), _T("Info"), 
-			MB_OK | MB_ICONINFORMATION);
-		return FALSE;
+		int result = ::MessageBox(NULL, L"An Instance of this application is already running.\nI will try to close the other instance.", 
+			L"Info", MB_OKCANCEL | MB_ICONINFORMATION);
+		switch (result)
+		{
+			case IDCANCEL:
+			return FALSE;
+			case IDOK:
+			{
+				if (!TerminateOtherInstance())
+				{
+					return FALSE;
+				}
+				break;
+			}
+		}
 	}
 
 	INITCOMMONCONTROLSEX InitCtrls;
@@ -57,6 +90,7 @@ CWnd* CNativeMultiClockMFCApp::CreateSysTrayDialog()
 
 	HiddenDialog* dialog = new HiddenDialog();
 	dialog->Create(dialog->IDD);
+	dialog->SetWindowText(HIDDEN_DIALOG_WINDOW_TEXT);
 
 	::ZeroMemory(&trayData, sizeof(NOTIFYICONDATA));
 	trayData.cbSize = sizeof(NOTIFYICONDATA);
