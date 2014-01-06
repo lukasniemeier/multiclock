@@ -157,7 +157,9 @@
       <AdditionalIncludeDirectories>$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <PostBuildEvent>
-      <Command>xcopy $(OutDir)*.exe $(SolutionDir)deploy /Y
+      <Command>del $(SolutionDir)deploy\*.exe
+del $(SolutionDir)deploy\*.dll
+xcopy $(OutDir)*.exe $(SolutionDir)deploy /Y
 xcopy $(OutDir)*.dll $(SolutionDir)deploy /Y</Command>
     </PostBuildEvent>
     <PreBuildEvent>
