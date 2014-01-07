@@ -28,3 +28,4 @@ void CALLBACK CloseClock(HWND tray, VOID* unused = nullptr);
 
 LRESULT CALLBACK HookInject(int code, WPARAM wParam, LPARAM lParam);
 LRESULT CALLBACK HookNewTaskbar(int code, WPARAM wParam, LPARAM lParam);
+LRESULT CALLBACK TraySubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData);

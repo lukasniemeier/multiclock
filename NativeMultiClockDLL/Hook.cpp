@@ -92,7 +92,8 @@ static LRESULT CALLBACK HookInject(int code, WPARAM wParam, LPARAM lParam)
 		EnumHandler handler = { HookTaskbar, nullptr };
 		::EnumWindows(EnumAllTaskbarsEx, (LPARAM)&handler);
 
-		NewTaskbarHook = ::SetWindowsHookEx(WH_GETMESSAGE, HookNewTaskbar, nullptr, GetCurrentThreadId());
+		::SetWindowSubclass(GetTray(), TraySubclassProc, 0, 0);
+		NewTaskbarHook = ::SetWindowsHookEx(WH_CALLWNDPROCRET, HookNewTaskbar, nullptr, GetCurrentThreadId());
 	}
 	return ::CallNextHookEx(nullptr, code, wParam, lParam);
 }
@@ -105,9 +106,9 @@ static DWORD WINAPI FreeLibraryFunc(void *param)
 
 static LRESULT CALLBACK HookNewTaskbar(int code, WPARAM wParam, LPARAM lParam)
 {
-	if (code == HC_ACTION)
+	if (code >= 0)
 	{
-		MSG* msg = (MSG*)lParam;
+		CWPRETSTRUCT* msg = (CWPRETSTRUCT*)lParam;
 		if (msg != nullptr)
 		{
 			if (msg->message == WM_CREATE)
@@ -121,17 +122,6 @@ static LRESULT CALLBACK HookNewTaskbar(int code, WPARAM wParam, LPARAM lParam)
 						HookTaskbar(hwnd);
 					}
 				}
-			}
-			if (msg->message == UnhookMessage && msg->hwnd == GetTray())
-			{
-				EnumHandler handler = { CloseClock, nullptr };
-				::EnumWindows(EnumAllTaskbarsEx, (LPARAM)&handler);
-				::Sleep(1000);
-
-				LRESULT result = CallNextHookEx(NULL, code, wParam, lParam);
-				::UnhookWindowsHookEx(NewTaskbarHook);
-				::CreateThread(nullptr, 0, FreeLibraryFunc, nullptr, 0, nullptr);
-				return result;
 			}
 		}
 	}
@@ -175,4 +165,25 @@ static void CALLBACK CloseClock(HWND tray, VOID* unused)
 	{
 		PostMessage(hwnd, WM_CLOSE, 0x0, 0x0);
 	}
+}
+
+LRESULT CALLBACK TraySubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData)
+{
+	if (uMsg == UnhookMessage)
+	{
+		EnumHandler handler = { CloseClock, nullptr };
+		::EnumWindows(EnumAllTaskbarsEx, (LPARAM)&handler);
+		::Sleep(1000);
+
+		LRESULT result = DefSubclassProc(hWnd, uMsg, wParam, lParam);
+		::UnhookWindowsHookEx(NewTaskbarHook);
+		::RemoveWindowSubclass(hWnd, TraySubclassProc, uIdSubclass);
+		::CreateThread(nullptr, 0, FreeLibraryFunc, nullptr, 0, nullptr);
+		return result;
+	}
+	else if (uMsg == WM_NCDESTROY)
+	{
+		::RemoveWindowSubclass(hWnd, TraySubclassProc, uIdSubclass);
+	}
+	return DefSubclassProc(hWnd, uMsg, wParam, lParam);
 }
