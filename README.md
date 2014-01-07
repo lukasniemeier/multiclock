@@ -1,6 +1,6 @@
 # MultiClock
 
-This Windows 8.1 shell extension displays an additional clock on each secondary taskbar. 
+This Windows 8/8.1 (x64 only) shell extension displays an additional clock on each secondary taskbar.
 
 ## Install
 
