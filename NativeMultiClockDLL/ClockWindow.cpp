@@ -40,44 +40,6 @@ void ClockWindow::OnFinalMessage(HWND hwnd)
 	Gdiplus::GdiplusShutdown(gdiplusToken);
 }
 
-std::wstring ClockWindow::GetTimeString(int maxHeight)
-{
-	SYSTEMTIME time;
-	GetLocalTime(&time);
-
-	wchar_t* timeTextBuffer;
-	int timeLength = ::GetTimeFormatEx(LOCALE_NAME_USER_DEFAULT, TIME_NOSECONDS, &time, nullptr, nullptr, 0);
-	timeTextBuffer = new wchar_t[timeLength];
-	::GetTimeFormatEx(LOCALE_NAME_USER_DEFAULT, TIME_NOSECONDS, &time, nullptr, timeTextBuffer, timeLength);
-	std::wstring timeText(timeTextBuffer);
-	delete timeTextBuffer;
-
-	if (maxHeight >= 36)
-	{
-		int dateLength = ::GetDateFormatEx(LOCALE_NAME_USER_DEFAULT, DATE_SHORTDATE | DATE_AUTOLAYOUT, &time, nullptr, nullptr, 0, nullptr);
-		wchar_t* dateTextBuffer = new wchar_t[dateLength];
-		::GetDateFormatEx(LOCALE_NAME_USER_DEFAULT, DATE_SHORTDATE | DATE_AUTOLAYOUT, &time, nullptr, dateTextBuffer, dateLength, nullptr);
-		std::wstring dateText(dateTextBuffer);
-		delete dateTextBuffer;
-
-		if (maxHeight >= 60)
-		{
-			int dayLength = ::GetDateFormatEx(LOCALE_NAME_USER_DEFAULT, DATE_AUTOLAYOUT, &time, L"dddd", nullptr, 0, nullptr);
-			wchar_t* dayTextBuffer = new wchar_t[dayLength];
-			::GetDateFormatEx(LOCALE_NAME_USER_DEFAULT, DATE_AUTOLAYOUT, &time, L"dddd", dayTextBuffer, dayLength, nullptr);
-			std::wstring dayText(dayTextBuffer);
-			delete dayTextBuffer;
-
-			timeText += '\n';
-			timeText += dayText;
-		}
-
-		timeText += '\n';
-		timeText += dateText;
-	}
-	return timeText;
-}
-
 LRESULT ClockWindow::OnLeftButtonUp(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
 {
 	isClicked = false;
@@ -286,7 +248,11 @@ void ClockWindow::RepositionInTray(HWND tray)
 	{
 		targetRect.left = trayRect.left + (uEdge == ABE_LEFT ? 0 : MARGIN);
 		targetRect.right = trayRect.right - (uEdge == ABE_LEFT ? 2 : MARGIN);
-		targetRect.top = trayRect.bottom - 36;
+
+		int width = targetRect.right - targetRect.left;
+		int height = width > 70 ? 53 : 36;
+
+		targetRect.top = trayRect.bottom - height;
 		targetRect.bottom = trayRect.bottom;
 	}
 	else

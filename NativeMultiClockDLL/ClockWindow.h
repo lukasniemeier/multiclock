@@ -32,7 +32,7 @@ public:
 
 	virtual void OnFinalMessage(HWND hwnd);
 
-	void Refresh();
+	void Refresh() const;
 	LRESULT OnLeftButtonUp(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
 	LRESULT OnLeftButtonDown(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
 	LRESULT OnMouseMove(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
@@ -48,12 +48,13 @@ public:
 	static HWND GetOriginalClock();
 
 protected:
-	void DrawClockControl(Gdiplus::Graphics* graphics, int width, int height);
-	void RenderTime(Gdiplus::Graphics* graphics, int width, int height);
-	void RenderHighlight(Gdiplus::Graphics* graphics, int width, int height);
-	void RenderClickedState(Gdiplus::Graphics* graphics, int width, int height);
-	
-	std::wstring GetTimeString(int maxHeight);
+	void DrawClockControl(Gdiplus::Graphics* graphics, int width, int height) const;
+	std::wstring GetFittingText(const Gdiplus::Graphics* graphics, int maxWidth, int maxHeight, const Gdiplus::Font& font, const Gdiplus::StringFormat& format) const;
+	Gdiplus::SizeF MeasureText(const Gdiplus::Graphics* graphics, const std::wstring& text, const Gdiplus::Font& font, const Gdiplus::StringFormat& format) const;
+	void RenderTime(Gdiplus::Graphics* graphics, int width, int height) const;
+	void RenderHighlight(Gdiplus::Graphics* graphics, int width, int height) const;
+	void RenderClickedState(Gdiplus::Graphics* graphics, int width, int height) const;
+
 	void MoveClockFlyout();
 
 	LRESULT OnCreate(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
