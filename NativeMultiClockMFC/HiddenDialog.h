@@ -23,6 +23,7 @@ protected:
 	void ShowContextMenu(bool expert);
 	afx_msg LRESULT OnCustomTrayIcon(WPARAM wParam, LPARAM lParam);
 	afx_msg LRESULT OnClose(WPARAM wParam, LPARAM lParam);
+	afx_msg LRESULT OnUnhookInjection(WPARAM wParam, LPARAM lParam);
 	virtual BOOL OnCommand(WPARAM wParam, LPARAM lParam);
 
 	static int GetClockCount();

@@ -14,8 +14,29 @@ BOOL CALLBACK SearchClockWidget(HWND hwnd, LPARAM lParam)
 		*((HWND*)lParam) = hwnd;
 		result = false;
 	}
-	delete className;
+	delete[] className;
 	return result;
+}
+
+UINT GetTaskbarOrientation(HWND hwnd)
+{
+	RECT rc;
+	GetWindowRect(hwnd, &rc);
+	MONITORINFO info = { sizeof(info) };
+	HMONITOR monitor = MonitorFromRect(&rc, MONITOR_DEFAULTTONEAREST);
+	GetMonitorInfo(monitor, &info);
+	int dx = rc.left + rc.right - info.rcWork.left - info.rcWork.right;
+	int dy = rc.top + rc.bottom - info.rcWork.top - info.rcWork.bottom;
+	if (dx<-abs(dy)) return ABE_LEFT;
+	if (dx>abs(dy)) return ABE_RIGHT;
+	if (dy < -abs(dx)) return ABE_TOP;
+	return ABE_BOTTOM;
+}
+
+LRESULT ClockWindow::OnDestroy(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
+{
+	bHandled = FALSE;
+	return 0;
 }
 
 ClockWindow::ClockWindow()
@@ -30,7 +51,6 @@ ClockWindow::ClockWindow()
 	Gdiplus::Status status = GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
 	if (status != Gdiplus::Status::Ok)
 	{
-		Beep(1200, 2000);
 		return;
 	}
 }
@@ -39,6 +59,36 @@ void ClockWindow::OnFinalMessage(HWND hwnd)
 {
 	Gdiplus::GdiplusShutdown(gdiplusToken);
 }
+
+void ClockWindow::RepositionInTray(HWND tray)
+{
+	RECT targetRect;
+	RECT trayRect;
+	::GetClientRect(tray, &trayRect);
+
+	UINT MARGIN = 2;
+	UINT uEdge = GetTaskbarOrientation(tray);
+	if (uEdge == ABE_LEFT || uEdge == ABE_RIGHT)
+	{
+		targetRect.left = trayRect.left + (uEdge == ABE_LEFT ? 0 : MARGIN);
+		targetRect.right = trayRect.right - (uEdge == ABE_LEFT ? 2 : MARGIN);
+
+		int width = targetRect.right - targetRect.left;
+		int height = width > 70 ? 53 : 36;
+
+		targetRect.top = trayRect.bottom - height;
+		targetRect.bottom = trayRect.bottom;
+	}
+	else
+	{
+		targetRect.left = trayRect.right - 75;
+		targetRect.right = trayRect.right;
+		targetRect.top = trayRect.top + MARGIN;
+		targetRect.bottom = trayRect.bottom;
+	}
+	SetWindowPos(HWND_TOP, &targetRect, SWP_SHOWWINDOW | SWP_NOOWNERZORDER | SWP_NOACTIVATE);
+}
+
 
 LRESULT ClockWindow::OnLeftButtonUp(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
 {
@@ -221,49 +271,7 @@ LRESULT ClockWindow::OnInitMenu(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& b
 	return 0;
 }
 
-UINT GetTaskbarOrientation(HWND hwnd)
-{
-	RECT rc;
-	GetWindowRect(hwnd, &rc);
-	MONITORINFO info = { sizeof(info) };
-	HMONITOR monitor = MonitorFromRect(&rc, MONITOR_DEFAULTTONEAREST);
-	GetMonitorInfo(monitor, &info);
-	int dx = rc.left + rc.right - info.rcWork.left - info.rcWork.right;
-	int dy = rc.top + rc.bottom - info.rcWork.top - info.rcWork.bottom;
-	if (dx<-abs(dy)) return ABE_LEFT;
-	if (dx>abs(dy)) return ABE_RIGHT;
-	if (dy < -abs(dx)) return ABE_TOP;
-	return ABE_BOTTOM;
-}
 
-void ClockWindow::RepositionInTray(HWND tray)
-{
-	RECT targetRect;
-	RECT trayRect;
-	::GetClientRect(tray, &trayRect);
-
-	UINT MARGIN = 2;
-	UINT uEdge = GetTaskbarOrientation(tray);
-	if (uEdge == ABE_LEFT || uEdge == ABE_RIGHT)
-	{
-		targetRect.left = trayRect.left + (uEdge == ABE_LEFT ? 0 : MARGIN);
-		targetRect.right = trayRect.right - (uEdge == ABE_LEFT ? 2 : MARGIN);
-
-		int width = targetRect.right - targetRect.left;
-		int height = width > 70 ? 53 : 36;
-
-		targetRect.top = trayRect.bottom - height;
-		targetRect.bottom = trayRect.bottom;
-	}
-	else
-	{
-		targetRect.left = trayRect.right - 75;
-		targetRect.right = trayRect.right;
-		targetRect.top = trayRect.top + MARGIN;
-		targetRect.bottom = trayRect.bottom;
-	}
-	SetWindowPos(HWND_TOP, &targetRect, SWP_SHOWWINDOW | SWP_NOOWNERZORDER | SWP_NOACTIVATE);
-}
 
 LRESULT ClockWindow::OnCreate(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
 {
@@ -285,6 +293,7 @@ LRESULT ClockWindow::OnClose(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHan
 	::RemoveWindowSubclass(workerW, ClockWindow::WorkerWSubclassProc, 2);
 	::RemoveWindowSubclass(clock, ClockWindow::OriginalClockSubclassProc, 1);
 	DestroyWindow();
+	bHandled = FALSE;
 	return 0;
 }
 

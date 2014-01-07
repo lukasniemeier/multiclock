@@ -26,6 +26,7 @@ public:
 		MESSAGE_HANDLER(WM_CREATE, OnCreate)
 		MESSAGE_HANDLER(WM_INITMENU, OnInitMenu);
 		MESSAGE_HANDLER(WM_CLOSE, OnClose)
+		MESSAGE_HANDLER(WM_DESTROY, OnDestroy)
 	END_MSG_MAP()
 
 	ClockWindow();
@@ -33,20 +34,22 @@ public:
 	virtual void OnFinalMessage(HWND hwnd);
 
 	void Refresh() const;
+	void RepositionInTray(HWND tray);
+	void StartTrackingOn(HWND tray);
+	
+	LRESULT OnClose(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
+	LRESULT OnDestroy(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
 	LRESULT OnLeftButtonUp(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
 	LRESULT OnLeftButtonDown(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
 	LRESULT OnMouseMove(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
 	LRESULT OnMouseLeave(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
 	LRESULT OnMouseHover(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
 	LRESULT OnInitMenu(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
-	
-	void StartTrackingOn(HWND tray);
-	void RepositionInTray(HWND tray);
 
 	bool IsClicked() { return isClicked; }
 public:
 	static HWND GetOriginalClock();
-
+	
 protected:
 	void DrawClockControl(Gdiplus::Graphics* graphics, int width, int height) const;
 	std::wstring GetFittingText(const Gdiplus::Graphics* graphics, int maxWidth, int maxHeight, const Gdiplus::Font& font, const Gdiplus::StringFormat& format) const;
@@ -54,11 +57,10 @@ protected:
 	void RenderTime(Gdiplus::Graphics* graphics, int width, int height) const;
 	void RenderHighlight(Gdiplus::Graphics* graphics, int width, int height) const;
 	void RenderClickedState(Gdiplus::Graphics* graphics, int width, int height) const;
-
+	
 	void MoveClockFlyout();
 
 	LRESULT OnCreate(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
-	LRESULT OnClose(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
 
 private:
 	ULONG_PTR gdiplusToken;

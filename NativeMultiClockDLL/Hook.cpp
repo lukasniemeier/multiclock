@@ -4,7 +4,17 @@
 HINSTANCE GlobalInstance = nullptr;
 HHOOK InjectionHook = nullptr;
 BOOL InjectionHookFirstRun = true;
-HHOOK NewTaskbarHook = nullptr;
+
+// Warning: used in both processes!
+HWND GlobalTray = nullptr;
+HWND GetTray()
+{
+	if (GlobalTray == nullptr || !::IsWindow(GlobalTray))
+	{
+		GlobalTray = ::FindWindow(L"Shell_TrayWnd", L"");
+	}
+	return ::IsWindow(GlobalTray) ? GlobalTray : nullptr;
+}
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
 {
@@ -18,96 +28,128 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 
 MYHOOK_API BOOL Hook()
 {
-	HWND tray = ::FindWindow(L"Shell_TrayWnd", L"");
-	if (tray == nullptr || !::IsWindow(tray))
+	HWND tray = GetTray();
+	if (tray == nullptr)
 	{
 		return FALSE;
 	}
-
+	
 	DWORD shell = ::GetWindowThreadProcessId(tray, nullptr);
-	InjectionHook = SetWindowsHookEx(WH_CALLWNDPROC, HookInject, GlobalInstance, shell);
-	NewTaskbarHook = ::SetWindowsHookEx(WH_CALLWNDPROCRET, HookNewTaskbar, GlobalInstance, shell);
-	return InjectionHook != nullptr && NewTaskbarHook != nullptr;
+	InjectionHook = ::SetWindowsHookEx(WH_CALLWNDPROC, HookInject, GlobalInstance, shell);
+	return InjectionHook != nullptr;
 }
 
-static DWORD WINAPI ExitThreadProc(void *param)
-{
-	FreeLibraryAndExitThread(GlobalInstance, 0);
-}
-
-static void CALLBACK CloseClock(HWND tray, VOID* unused = nullptr)
-{
-	HWND hwnd = ::FindWindowEx(tray, nullptr, CLOCK_WINDOW_CLASS, nullptr);
-	if (hwnd != nullptr)
-	{
-		PostMessage(hwnd, WM_CLOSE, 0x0, 0x0);
-	}
-}
-
-MYHOOK_API BOOL Unhook()
+MYHOOK_API BOOL UnhookInjectionHook()
 {
 	if (InjectionHook == nullptr)
 	{
 		return FALSE;
 	}
 
-	EnumHandler handler = { CloseClock, nullptr };
-	::EnumWindows(EnumAllTaskbarsEx, (LPARAM)&handler);
-	::Sleep(2000);
-	::CreateThread(nullptr, 0, ExitThreadProc, nullptr, 0, nullptr);
-	return ::UnhookWindowsHookEx(InjectionHook) && ::UnhookWindowsHookEx(NewTaskbarHook);
-}
-
-static void CALLBACK HookTaskbar(HWND tray, VOID* unused = nullptr)
-{
-	ClockWindow* multiClock = new ClockWindow();
-	HWND hwnd = multiClock->Create(tray, nullptr, nullptr, WS_CHILD | WS_DISABLED, 0 | WS_EX_LAYERED, 0U, nullptr);
-
-	multiClock->RepositionInTray(tray);
-	multiClock->ShowWindow(SW_SHOW);
-	multiClock->Refresh();
-}
-
-static LRESULT CALLBACK HookNewTaskbar(int code, WPARAM wParam, LPARAM lParam)
-{
-	if (code < 0)
+	BOOL result = ::UnhookWindowsHookEx(InjectionHook);
+	if (result)
 	{
-		return ::CallNextHookEx(NULL, code, wParam, lParam);
+		InjectionHook = nullptr;
 	}
-	else
-	{
-		CWPRETSTRUCT* info = (CWPRETSTRUCT*)lParam;
-		if (info != nullptr)
-		{
-			if (info->message == WM_CREATE)
-			{
-				wchar_t name[128];
-				if (::GetClassName(info->hwnd, name, 128) > 0)
-				{
-					if (_wcsicmp(name, L"Shell_SecondaryTrayWnd") == 0)
-					{
-						HookTaskbar(info->hwnd);
-					}
-				}
-			}
-		}
-		
-
-		return ::CallNextHookEx(NULL, code, wParam, lParam);
-	}
-	
+	return result;
 }
 
-// RUNS IN OTHER THREAD / PROCESS!!!
+static UINT UnhookMessage = ::RegisterWindowMessage(L"NativeMultiClock.MyButton.UnhookMessage");
+
+MYHOOK_API BOOL Unhook()
+{
+	UnhookInjectionHook();
+
+	HWND tray = GetTray();
+	if (tray == nullptr)
+	{
+		return FALSE;
+	}
+
+	::PostMessage(tray, UnhookMessage, 0x0, 0x0);
+	return TRUE;
+}
+
+// ##############################################################
+// ############ RUNS IN OTHER THREAD / PROCESS ##################
+// ##############################################################
+
+HHOOK NewTaskbarHook = nullptr;
+
 static LRESULT CALLBACK HookInject(int code, WPARAM wParam, LPARAM lParam)
 {
 	if (InjectionHookFirstRun)
 	{
 		InjectionHookFirstRun = false;
+
+		HWND hwnd = ::FindWindow(nullptr, L"NativeMultiClock.HiddenDialog");
+		::LoadLibrary(_T(PROJECT_TARGETNAME));
+		if (hwnd != nullptr)
+		{
+			::PostMessage(hwnd, WM_UNHOOK_INJECTION, 0, 0);
+		}
+
 		EnumHandler handler = { HookTaskbar, nullptr };
 		::EnumWindows(EnumAllTaskbarsEx, (LPARAM)&handler);
+
+		NewTaskbarHook = ::SetWindowsHookEx(WH_GETMESSAGE, HookNewTaskbar, nullptr, GetCurrentThreadId());
 	}
 	return ::CallNextHookEx(nullptr, code, wParam, lParam);
+}
+
+static DWORD WINAPI FreeLibraryFunc(void *param)
+{
+	::Sleep(3000);
+	::FreeLibraryAndExitThread(GlobalInstance, 0);
+}
+
+static LRESULT CALLBACK HookNewTaskbar(int code, WPARAM wParam, LPARAM lParam)
+{
+	if (code == HC_ACTION)
+	{
+		MSG* msg = (MSG*)lParam;
+		if (msg != nullptr)
+		{
+			if (msg->message == WM_CREATE)
+			{
+				HWND hwnd = msg->hwnd;
+				wchar_t name[128];
+				if (::GetClassName(hwnd, name, 128) > 0)
+				{
+					if (_wcsicmp(name, L"Shell_SecondaryTrayWnd") == 0)
+					{
+						HookTaskbar(hwnd);
+					}
+				}
+			}
+			if (msg->message == UnhookMessage && msg->hwnd == GetTray())
+			{
+				EnumHandler handler = { CloseClock, nullptr };
+				::EnumWindows(EnumAllTaskbarsEx, (LPARAM)&handler);
+				::Sleep(1000);
+
+				LRESULT result = CallNextHookEx(NULL, code, wParam, lParam);
+				::UnhookWindowsHookEx(NewTaskbarHook);
+				::CreateThread(nullptr, 0, FreeLibraryFunc, nullptr, 0, nullptr);
+				return result;
+			}
+		}
+	}
+	return ::CallNextHookEx(NULL, code, wParam, lParam);
+}
+
+static void CALLBACK HookTaskbar(HWND tray, VOID* unused)
+{
+	ClockWindow* multiClock = new ClockWindow();
+	HWND window = multiClock->Create(tray, nullptr, nullptr, WS_CHILD | WS_DISABLED, 0 | WS_EX_LAYERED, 0U, nullptr);
+	if (window == nullptr)
+	{
+		throw 42;
+	}
+
+	multiClock->RepositionInTray(tray);
+	multiClock->ShowWindow(SW_SHOW);
+	multiClock->Refresh();
 }
 
 MYHOOK_API BOOL CALLBACK EnumAllTaskbarsEx(HWND hwnd, LPARAM lParam)
@@ -124,4 +166,13 @@ MYHOOK_API BOOL CALLBACK EnumAllTaskbarsEx(HWND hwnd, LPARAM lParam)
 		handler->func(hwnd, handler->param);
 	}
 	return TRUE;
+}
+
+static void CALLBACK CloseClock(HWND tray, VOID* unused)
+{
+	HWND hwnd = ::FindWindowEx(tray, nullptr, CLOCK_WINDOW_CLASS, nullptr);
+	if (hwnd != nullptr)
+	{
+		PostMessage(hwnd, WM_CLOSE, 0x0, 0x0);
+	}
 }

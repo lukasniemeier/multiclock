@@ -33,6 +33,7 @@ void HiddenDialog::DoDataExchange(CDataExchange* pDX)
 BEGIN_MESSAGE_MAP(HiddenDialog, CDialog)
 	ON_MESSAGE(WM_CUSTOM_TRAY_ICON, &HiddenDialog::OnCustomTrayIcon)
 	ON_MESSAGE(WM_CLOSE, &HiddenDialog::OnClose)
+	ON_MESSAGE(WM_UNHOOK_INJECTION, &HiddenDialog::OnUnhookInjection)
 END_MESSAGE_MAP()
 
 void HiddenDialog::ShowContextMenu(bool expert)
@@ -128,4 +129,10 @@ BOOL HiddenDialog::OnCommand(WPARAM wParam, LPARAM lParam)
 		return TRUE;
 	}
 	return CDialog::OnCommand(wParam, lParam);
+}
+
+
+afx_msg LRESULT HiddenDialog::OnUnhookInjection(WPARAM wParam, LPARAM lParam)
+{
+	return UnhookInjectionHook();
 }
