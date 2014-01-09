@@ -47,7 +47,7 @@ public:
 
 	virtual void OnFinalMessage(HWND hwnd);
 
-	void Refresh();
+	void Refresh(bool force = false);
 	void RepositionIn(HWND taskbar);
 	void StartTrackingOn(HWND taskbar);
 

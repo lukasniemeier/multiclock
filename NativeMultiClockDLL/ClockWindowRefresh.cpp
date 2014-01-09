@@ -205,12 +205,12 @@ bool ClockWindow::IsVisible(const RECT& clientRect)
 	return !::IsRectEmpty(&intersectRect);
 }
 
-void ClockWindow::Refresh()
+void ClockWindow::Refresh(bool force)
 {
 	RECT clientRect;
 	GetClientRect(&clientRect);
 
-	if (!IsVisible(clientRect))
+	if (!force && !IsVisible(clientRect))
 	{
 		return;
 	}

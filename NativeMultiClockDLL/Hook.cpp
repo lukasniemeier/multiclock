@@ -134,12 +134,8 @@ static void CALLBACK HookTaskbar(HWND taskbar, VOID* unused)
 	if (window == nullptr)
 	{
 #if _DEBUG
-		Beep(400, 100);
 		DWORD error = GetLastError();
-		if (error != 0)
-		{
-			MessageBoxError(error);
-		}
+		MessageBoxError(error);
 #endif
 		delete multiClock;
 		return;
@@ -147,7 +143,7 @@ static void CALLBACK HookTaskbar(HWND taskbar, VOID* unused)
 
 	multiClock->RepositionIn(taskbar);
 	multiClock->ShowWindow(SW_SHOW);
-	multiClock->Refresh();
+	multiClock->Refresh(true);
 }
 
 MYHOOK_API BOOL CALLBACK EnumAllTaskbarsEx(HWND hwnd, LPARAM lParam)
