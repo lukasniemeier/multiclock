@@ -81,11 +81,11 @@ void ClockWindow::RenderHighlight(Gdiplus::Graphics* graphics, int width, int he
 	graphics->FillPath(&dotBursh, &dotPath);
 
 	const Rect dotLineRect(0, height - 1, width, 1);
-	Color colors[] = 
+	Color colors[] =
 	{
 		otherDotColors[0],
 		centerDotColor,
-		otherDotColors[0] 
+		otherDotColors[0]
 	};
 	REAL positions[] = {
 		0.0f,
@@ -94,7 +94,7 @@ void ClockWindow::RenderHighlight(Gdiplus::Graphics* graphics, int width, int he
 	LinearGradientBrush dotLineBrush(
 		Point(dotLineRect.X, dotLineRect.Y),
 		Point(dotLineRect.GetRight(), dotLineRect.GetBottom()),
-		Color(255, 0, 0, 0), 
+		Color(255, 0, 0, 0),
 		Color(255, 255, 255, 255));
 	dotLineBrush.SetInterpolationColors(colors, positions, 3);
 	graphics->FillRectangle(&dotLineBrush, dotLineRect);
@@ -189,10 +189,32 @@ void ClockWindow::RenderHighlighting(Graphics* graphics, int width, int height) 
 	}
 }
 
-void ClockWindow::Refresh() const
+bool ClockWindow::IsVisible(const RECT& clientRect)
+{
+	HDC parent = ::GetDC(this->GetParent());
+	RECT clip;
+	int result = ::GetClipBox(parent, &clip);
+	::ReleaseDC(this->GetParent(), parent);
+
+	RECT inParentRect(clientRect);
+	MapWindowPoints(this->GetParent(), &inParentRect);
+
+	RECT intersectRect;
+	::IntersectRect(&intersectRect, &clip, &inParentRect);
+
+	return !::IsRectEmpty(&intersectRect);
+}
+
+void ClockWindow::Refresh()
 {
 	RECT clientRect;
 	GetClientRect(&clientRect);
+
+	if (!IsVisible(clientRect))
+	{
+		return;
+	}
+
 	int width = clientRect.right - clientRect.left;
 	int height = clientRect.bottom - clientRect.top;
 
@@ -214,7 +236,7 @@ void ClockWindow::Refresh() const
 	HDC hdcScreen = ::GetDC(nullptr);
 	HDC hDC = ::CreateCompatibleDC(hdcScreen);
 	HBITMAP hbitmapOld = (HBITMAP) ::SelectObject(hDC, hbitmap);
-	
+
 	RenderTime(hDC, width, height);
 
 	SIZE sizeWnd = { width, height };

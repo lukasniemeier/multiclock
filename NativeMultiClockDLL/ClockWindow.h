@@ -25,6 +25,15 @@ class Gdiplus::Graphics;
 class ClockWindow : public CWindowImpl<ClockWindow>
 {
 public:
+
+	enum Orientation 
+	{
+		BOTTOM,
+		TOP,
+		LEFT,
+		RIGHT
+	};
+
 	DECLARE_WND_CLASS_EX(CLOCK_WINDOW_CLASS, CS_DBLCLKS, COLOR_MENU)
 
 	BEGIN_MSG_MAP(ClockWindow)
@@ -38,7 +47,7 @@ public:
 
 	virtual void OnFinalMessage(HWND hwnd);
 
-	void Refresh() const;
+	void Refresh();
 	void RepositionIn(HWND taskbar);
 	void StartTrackingOn(HWND taskbar);
 
@@ -55,12 +64,15 @@ public:
 	bool IsClicked() { return isClicked; }
 public:
 	static HWND GetOriginalClock();
+	static Orientation GetTaskbarOrientation(HWND hwnd);
 	
 protected:
 	void RenderTime(HDC context, int width, int height) const;
 	void RenderHighlighting(Gdiplus::Graphics* graphics, int width, int height) const;
 	void RenderHighlight(Gdiplus::Graphics* graphics, int width, int height) const;
 	void RenderClickedState(Gdiplus::Graphics* graphics, int width, int height) const;
+
+	bool IsVisible(const RECT& clientRect);
 	
 	void MoveClockFlyout() const;
 
