@@ -12,7 +12,7 @@ HWND GetMainTaskbar()
 {
 	if (GlobalMainTaskbar == nullptr || !::IsWindow(GlobalMainTaskbar))
 	{
-		GlobalMainTaskbar = ::FindWindow(TASKBAR_MAIN_CLASS, L"");
+		GlobalMainTaskbar = ::FindWindow(TASKBAR_MAIN_CLASS, nullptr);
 	}
 	return ::IsWindow(GlobalMainTaskbar) ? GlobalMainTaskbar : nullptr;
 }
