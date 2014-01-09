@@ -54,6 +54,11 @@ ClockWindow::ClockWindow()
 	{
 		return;
 	}
+	
+	INITCOMMONCONTROLSEX commonControls;
+	commonControls.dwSize = sizeof(INITCOMMONCONTROLSEX);
+	commonControls.dwICC = ICC_STANDARD_CLASSES;
+	::InitCommonControlsEx(&commonControls);
 }
 
 void ClockWindow::OnFinalMessage(HWND hwnd)
