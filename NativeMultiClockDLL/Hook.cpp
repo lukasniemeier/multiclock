@@ -138,7 +138,7 @@ static void CALLBACK HookTaskbar(HWND tray, VOID* unused)
 		DWORD error = GetLastError();
 		if (error != 0)
 		{
-			MessageBoxError(L"Error", error);
+			MessageBoxError(error);
 		}
 #endif
 		delete multiClock;

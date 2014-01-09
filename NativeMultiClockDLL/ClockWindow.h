@@ -25,6 +25,7 @@ public:
 	BEGIN_MSG_MAP(ClockWindow)
 		MESSAGE_HANDLER(WM_CREATE, OnCreate)
 		MESSAGE_HANDLER(WM_INITMENU, OnInitMenu);
+		//MESSAGE_HANDLER(WM_PAINT, OnPaint);
 		MESSAGE_HANDLER(WM_CLOSE, OnClose)
 		MESSAGE_HANDLER(WM_DESTROY, OnDestroy)
 	END_MSG_MAP()
@@ -36,7 +37,8 @@ public:
 	void Refresh() const;
 	void RepositionInTray(HWND tray);
 	void StartTrackingOn(HWND tray);
-	
+
+	LRESULT OnCreate(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
 	LRESULT OnClose(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
 	LRESULT OnDestroy(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
 	LRESULT OnLeftButtonUp(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
@@ -51,16 +53,12 @@ public:
 	static HWND GetOriginalClock();
 	
 protected:
-	void DrawClockControl(Gdiplus::Graphics* graphics, int width, int height) const;
-	std::wstring GetFittingText(const Gdiplus::Graphics* graphics, int maxWidth, int maxHeight, const Gdiplus::Font& font, const Gdiplus::StringFormat& format) const;
-	Gdiplus::SizeF MeasureText(const Gdiplus::Graphics* graphics, const std::wstring& text, const Gdiplus::Font& font, const Gdiplus::StringFormat& format) const;
-	void RenderTime(Gdiplus::Graphics* graphics, int width, int height) const;
+	void RenderTime(HDC context, int width, int height) const;
+	void RenderHighlighting(Gdiplus::Graphics* graphics, int width, int height) const;
 	void RenderHighlight(Gdiplus::Graphics* graphics, int width, int height) const;
 	void RenderClickedState(Gdiplus::Graphics* graphics, int width, int height) const;
 	
 	void MoveClockFlyout();
-
-	LRESULT OnCreate(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
 
 private:
 	ULONG_PTR gdiplusToken;

@@ -1,7 +1,19 @@
 #include "ClockWindow.h"
+#include <vector>
 
 using namespace Gdiplus;
 
+static void SaveBitmap(Bitmap* bitmap)
+{
+	CLSID guid;
+	::CLSIDFromString(L"{557CF406-1A04-11D3-9A73-0000F81EF32E}", &guid);
+	Status saveStatus = bitmap->Save(L"C:\\Users\\Hugo\\bitmap.png", &guid);
+	if (saveStatus != Status::Ok)
+	{
+		Beep(200, 100);
+		Beep(200, 100);
+	}
+}
 
 static std::wstring TextTime(SYSTEMTIME& time, DWORD flag, LPCWSTR format = nullptr)
 {
@@ -88,82 +100,82 @@ void ClockWindow::RenderHighlight(Gdiplus::Graphics* graphics, int width, int he
 	graphics->FillRectangle(&dotLineBrush, dotLineRect);
 }
 
-SizeF ClockWindow::MeasureText(const Graphics* graphics, const std::wstring& text, const Gdiplus::Font& font, const Gdiplus::StringFormat& format) const
-{
-	PointF origin(0.0f, 0.0f);
-	RectF boundingRect;
-	Gdiplus::Status status = graphics->MeasureString(text.c_str(), -1, &font, origin, &format, &boundingRect);
-
-	SizeF size;
-	size.Width = boundingRect.Width;
-	size.Height = boundingRect.Height;
-
-	return size;
-}
-
-std::wstring ClockWindow::GetFittingText(const Gdiplus::Graphics* graphics, int maxWidth, int maxHeight, const Gdiplus::Font& font, const Gdiplus::StringFormat& format) const
-{
-	SYSTEMTIME time;
-	GetLocalTime(&time);
-
-	std::wstring timeText;
-	std::wstring dateText;
-	std::wstring dayText;
-	
-	timeText = TextTime(time, TIME_NOSECONDS);
-	if (maxHeight >= 36)
-	{
-		if (maxHeight >= 53)
-		{
-			dayText = TextDate(time, 0, L"dddd");
-			if (MeasureText(graphics, dayText, font, format).Width <= maxWidth)
-			{
-				timeText += L"\n";
-				timeText += dayText;
-			}
-		}
-		dateText = TextDate(time, DATE_SHORTDATE);
-		if (MeasureText(graphics, dateText, font, format).Width <= maxWidth)
-		{
-			timeText += L"\n";
-			timeText += dateText;
-		}
-	}
-
-	return timeText;
-}
-
-void ClockWindow::RenderTime(Graphics* graphics, int width, int height) const
+void ClockWindow::RenderTime(HDC context, int maxWidth, int maxHeight) const
 {
 	// Get the current system font...
 	NONCLIENTMETRICS metrics;
 	metrics.cbSize = sizeof(NONCLIENTMETRICS);
 	::SystemParametersInfo(SPI_GETNONCLIENTMETRICS, sizeof(NONCLIENTMETRICS), &metrics, 0);
-	HDC context = graphics->GetHDC();
-	Font font(context, &metrics.lfStatusFont);
-	graphics->ReleaseHDC(context);
 
-	// ... define some font smoothing...
-	//graphics->SetTextRenderingHint(TextRenderingHint::TextRenderingHintSingleBitPerPixel);
-	StringFormat format;
-	format.SetAlignment(StringAlignment::StringAlignmentCenter);
-	format.SetLineAlignment(StringAlignment::StringAlignmentCenter);
+	HFONT font = ::CreateFontIndirect(&metrics.lfStatusFont);
+	HFONT oldFont = (HFONT)::SelectObject(context, font);
+	int oldBkMode = ::SetBkMode(context, TRANSPARENT);
+	int oldTextColor = ::SetTextColor(context, GetSysColor(COLOR_3DFACE));
 
-	std::wstring text = GetFittingText(graphics, width, height, font, format);
+	std::wstring timeText;
+	{
+		RECT textRect;
+		int textRectWidth;
 
-	// ... use all available space...
-	RectF layoutRect(0.0, 0.0, (REAL)width, (REAL)height);
+		SYSTEMTIME time;
+		GetLocalTime(&time);
 
-	// ... select default font color...
-	Gdiplus::Color textColor;
-	textColor.SetFromCOLORREF(GetSysColor(COLOR_3DFACE));
-	SolidBrush brush(textColor);
+		std::wstring dateText;
+		std::wstring dayText;
 
-	// ... and draw!
-	graphics->DrawString(text.c_str(), -1, &font, layoutRect, &format, &brush);
+		timeText = TextTime(time, TIME_NOSECONDS);
+		if (maxHeight >= 36)
+		{
+			if (maxHeight >= 53)
+			{
+				dayText = TextDate(time, 0, L"dddd");
+				textRect = { 0, 0, maxWidth, maxHeight };
+
+				std::vector<wchar_t> textBuffer(dayText.begin(), dayText.end());
+				textBuffer.push_back('\0');
+				::DrawTextEx(context, textBuffer.data(), -1, &textRect, DT_CALCRECT | DT_CENTER | DT_NOCLIP, nullptr);
+				textRectWidth = textRect.right - textRect.left;
+				if (textRectWidth <= maxWidth)
+				{
+					timeText += L"\n";
+					timeText += dayText;
+				}
+			}
+			dateText = TextDate(time, DATE_SHORTDATE);
+			textRect = { 0, 0, maxWidth, maxHeight };
+
+			std::vector<wchar_t> textBuffer(dayText.begin(), dayText.end());
+			textBuffer.push_back('\0');
+			::DrawTextEx(context, textBuffer.data(), -1, &textRect, DT_CALCRECT | DT_CENTER | DT_NOCLIP, nullptr);
+			textRectWidth = textRect.right - textRect.left;
+			if (textRectWidth <= maxWidth)
+			{
+				timeText += L"\n";
+				timeText += dateText;
+			}
+		}
+	}
+
+	RECT textRect = { 0, 0, maxWidth, maxHeight };
+
+	std::vector<wchar_t> textBuffer(timeText.begin(), timeText.end());
+	textBuffer.push_back('\0');
+	::DrawTextEx(context, textBuffer.data(), -1, &textRect, DT_CALCRECT | DT_CENTER | DT_NOCLIP, nullptr);
+
+	// move text rect to (0,0)
+	::OffsetRect(&textRect, -textRect.left, -textRect.top);
+	// center text rect
+	::OffsetRect(&textRect, (int)((maxWidth - textRect.right) / 2.0), (int)((maxHeight - textRect.bottom) / 2.0));
+	// draw
+	::DrawTextEx(context, textBuffer.data(), -1, &textRect, DT_CENTER | DT_NOCLIP, nullptr);
+
+	::SetTextColor(context, oldTextColor);
+	::SetBkMode(context, oldBkMode);
+	::SelectObject(context, oldFont);
+	::DeleteObject(font);
 }
 
-void ClockWindow::DrawClockControl(Graphics* graphics, int width, int height) const
+void ClockWindow::RenderHighlighting(Graphics* graphics, int width, int height) const
 {
 	SolidBrush burshClear(Color::Transparent);
 	graphics->FillRectangle(&burshClear, 0, 0, width, height);
@@ -175,7 +187,6 @@ void ClockWindow::DrawClockControl(Graphics* graphics, int width, int height) co
 	{
 		RenderHighlight(graphics, width, height);
 	}
-	RenderTime(graphics, width, height);
 }
 
 void ClockWindow::Refresh() const
@@ -185,7 +196,6 @@ void ClockWindow::Refresh() const
 	int width = clientRect.right - clientRect.left;
 	int height = clientRect.bottom - clientRect.top;
 
-	// Draw the control...
 	Bitmap* bitmap = new Bitmap(width, height, PixelFormat32bppPARGB);
 	Status status = bitmap->GetLastStatus();
 	if (status != Status::Ok)
@@ -193,21 +203,20 @@ void ClockWindow::Refresh() const
 		delete bitmap;
 		return;
 	}
-	DWORD error = GetLastError();
-	Graphics* graphics = Graphics::FromImage(bitmap);
-	DrawClockControl(graphics, width, height);
-	delete graphics;
 
-	// ... extract legacy bitmap...
+	Graphics* g = Graphics::FromImage(bitmap);
+	RenderHighlighting(g, width, height);
+	delete g;
+
 	HBITMAP hbitmap;
 	bitmap->GetHBITMAP(NULL, &hbitmap);
-	delete bitmap;
 
-	// ...and pass it to UpdateLayeredWindow
 	HDC hdcScreen = ::GetDC(nullptr);
 	HDC hDC = ::CreateCompatibleDC(hdcScreen);
 	HBITMAP hbitmapOld = (HBITMAP) ::SelectObject(hDC, hbitmap);
 	
+	RenderTime(hDC, width, height);
+
 	SIZE sizeWnd = { width, height };
 	POINT ptSrc = { 0, 0 };
 	BLENDFUNCTION blend = { 0 };
@@ -220,4 +229,7 @@ void ClockWindow::Refresh() const
 	::DeleteObject(hbitmap);
 	::DeleteDC(hDC);
 	::ReleaseDC(NULL, hdcScreen);
+
+	SaveBitmap(bitmap);
+	delete bitmap;
 }

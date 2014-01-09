@@ -1,5 +1,6 @@
 #include "ClockWindow.h"
 #include <WindowsX.h>
+#include "Dwmapi.h"
 
 #define FLYOUT_MARGIN 16
 #define WM_USER_SHOW_FLYOUT (WM_USER + 102)
@@ -281,6 +282,9 @@ LRESULT ClockWindow::OnCreate(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHa
 	::SetWindowSubclass(tray, ClockWindow::TaskbarSubclassProc, 0, (DWORD_PTR) this);
 	::SetWindowSubclass(workerW, ClockWindow::WorkerWSubclassProc, 2, (DWORD_PTR) this);
 	::SetWindowSubclass(clock, ClockWindow::OriginalClockSubclassProc, 1, (DWORD_PTR) this);
+
+	int val = 1;
+	DwmSetWindowAttribute(m_hWnd, DWMWA_EXCLUDED_FROM_PEEK, &val, sizeof(val));
 	return 0;
 }
 
