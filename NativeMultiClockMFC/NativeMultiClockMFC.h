@@ -19,9 +19,9 @@ public:
 	virtual int ExitInstance();
 
 protected:
-	CWnd* CreateSysTrayDialog();
+	CWnd* CreateNotificationDialog();
 
-	NOTIFYICONDATA trayData; 
+	NOTIFYICONDATA notificationData; 
 	HANDLE appMutex;
 
 public:

@@ -147,6 +147,7 @@ $(SolutionDir)killprocess.bat MultiClock.exe</Command>
   <ItemGroup>
     <ClInclude Include="ClockWindow.h" />
     <ClInclude Include="Error.h" />
+    <ClInclude Include="Globals.h" />
     <ClInclude Include="Hook.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

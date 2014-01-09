@@ -68,15 +68,15 @@ BOOL CNativeMultiClockMFCApp::InitInstance()
 		}
 	}
 
-	INITCOMMONCONTROLSEX InitCtrls;
-	InitCtrls.dwSize = sizeof(InitCtrls);
-	InitCtrls.dwICC = ICC_WIN95_CLASSES;
-	InitCommonControlsEx(&InitCtrls);
+	INITCOMMONCONTROLSEX commonControls;
+	commonControls.dwSize = sizeof(INITCOMMONCONTROLSEX);
+	commonControls.dwICC = ICC_STANDARD_CLASSES | ICC_WIN95_CLASSES;
+	InitCommonControlsEx(&commonControls);
 
 	CWinApp::InitInstance();
 	EnableTaskbarInteraction(FALSE);
 
-	m_pMainWnd = CreateSysTrayDialog();
+	m_pMainWnd = CreateNotificationDialog();
 	if (m_pMainWnd == nullptr)
 	{
 		return FALSE;
@@ -84,7 +84,7 @@ BOOL CNativeMultiClockMFCApp::InitInstance()
 	return Hook();
 }
 
-CWnd* CNativeMultiClockMFCApp::CreateSysTrayDialog()
+CWnd* CNativeMultiClockMFCApp::CreateNotificationDialog()
 {
 	HMODULE hInstance = GetModuleHandle(nullptr);
 
@@ -92,29 +92,29 @@ CWnd* CNativeMultiClockMFCApp::CreateSysTrayDialog()
 	dialog->Create(dialog->IDD);
 	dialog->SetWindowText(HIDDEN_DIALOG_WINDOW_TEXT);
 
-	::ZeroMemory(&trayData, sizeof(NOTIFYICONDATA));
-	trayData.cbSize = sizeof(NOTIFYICONDATA);
-	trayData.uID = 42;
-	trayData.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
-	trayData.hIcon = (HICON) LoadImage(hInstance,
+	::ZeroMemory(&notificationData, sizeof(NOTIFYICONDATA));
+	notificationData.cbSize = sizeof(NOTIFYICONDATA);
+	notificationData.uID = 42;
+	notificationData.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
+	notificationData.hIcon = (HICON)LoadImage(hInstance,
 		MAKEINTRESOURCE(IDI_ICON1),
 		IMAGE_ICON,
 		GetSystemMetrics(SM_CXSMICON),
 		GetSystemMetrics(SM_CYSMICON),
 		LR_DEFAULTCOLOR);
-	wsprintf(trayData.szTip, L"MultiClock");
-	trayData.hWnd = dialog->m_hWnd;
-	trayData.uCallbackMessage = WM_CUSTOM_TRAY_ICON;
+	wsprintf(notificationData.szTip, L"MultiClock");
+	notificationData.hWnd = dialog->m_hWnd;
+	notificationData.uCallbackMessage = WM_CUSTOM_TRAY_ICON;
 
-	if (!::Shell_NotifyIcon(NIM_ADD, &trayData))
+	if (!::Shell_NotifyIcon(NIM_ADD, &notificationData))
 	{
 		MessageBox(nullptr, L"Unable to set up notification area icon.", L"Error", MB_ICONERROR);
 		return nullptr;
 	}
 
-	if (trayData.hIcon && ::DestroyIcon(trayData.hIcon))
+	if (notificationData.hIcon && ::DestroyIcon(notificationData.hIcon))
 	{
-		trayData.hIcon = NULL;
+		notificationData.hIcon = NULL;
 	}
 
 	return dialog;
@@ -122,6 +122,6 @@ CWnd* CNativeMultiClockMFCApp::CreateSysTrayDialog()
 
 int CNativeMultiClockMFCApp::ExitInstance()
 {
-	Shell_NotifyIcon(NIM_DELETE, &trayData);
+	Shell_NotifyIcon(NIM_DELETE, &notificationData);
 	return Unhook() && CWinApp::ExitInstance();
 }

@@ -13,7 +13,7 @@
 #include <Strsafe.h>
 #include <string>
 
-#define CLOCK_WINDOW_CLASS L"NativeMultiClock.MyButton"
+#include "Globals.h"
 
 // Used for tooltips
 #pragma comment(linker,"\"/manifestdependency:type='win32' \
@@ -30,7 +30,6 @@ public:
 	BEGIN_MSG_MAP(ClockWindow)
 		MESSAGE_HANDLER(WM_CREATE, OnCreate)
 		MESSAGE_HANDLER(WM_INITMENU, OnInitMenu);
-		//MESSAGE_HANDLER(WM_PAINT, OnPaint);
 		MESSAGE_HANDLER(WM_CLOSE, OnClose)
 		MESSAGE_HANDLER(WM_DESTROY, OnDestroy)
 	END_MSG_MAP()
@@ -40,8 +39,8 @@ public:
 	virtual void OnFinalMessage(HWND hwnd);
 
 	void Refresh() const;
-	void RepositionInTray(HWND tray);
-	void StartTrackingOn(HWND tray);
+	void RepositionIn(HWND taskbar);
+	void StartTrackingOn(HWND taskbar);
 
 	LRESULT OnCreate(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
 	LRESULT OnClose(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
@@ -63,7 +62,7 @@ protected:
 	void RenderHighlight(Gdiplus::Graphics* graphics, int width, int height) const;
 	void RenderClickedState(Gdiplus::Graphics* graphics, int width, int height) const;
 	
-	void MoveClockFlyout();
+	void MoveClockFlyout() const;
 
 private:
 	ULONG_PTR gdiplusToken;

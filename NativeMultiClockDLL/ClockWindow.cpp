@@ -57,7 +57,7 @@ ClockWindow::ClockWindow()
 	
 	INITCOMMONCONTROLSEX commonControls;
 	commonControls.dwSize = sizeof(INITCOMMONCONTROLSEX);
-	commonControls.dwICC = ICC_STANDARD_CLASSES;
+	commonControls.dwICC = ICC_STANDARD_CLASSES | ICC_WIN95_CLASSES;
 	::InitCommonControlsEx(&commonControls);
 }
 
@@ -66,31 +66,31 @@ void ClockWindow::OnFinalMessage(HWND hwnd)
 	Gdiplus::GdiplusShutdown(gdiplusToken);
 }
 
-void ClockWindow::RepositionInTray(HWND tray)
+void ClockWindow::RepositionIn(HWND taskbar)
 {
 	RECT targetRect;
-	RECT trayRect;
-	::GetClientRect(tray, &trayRect);
+	RECT taskbarRect;
+	::GetClientRect(taskbar, &taskbarRect);
 
 	UINT MARGIN = 2;
-	UINT uEdge = GetTaskbarOrientation(tray);
+	UINT uEdge = GetTaskbarOrientation(taskbar);
 	if (uEdge == ABE_LEFT || uEdge == ABE_RIGHT)
 	{
-		targetRect.left = trayRect.left + (uEdge == ABE_LEFT ? 0 : MARGIN);
-		targetRect.right = trayRect.right - (uEdge == ABE_LEFT ? 2 : MARGIN);
+		targetRect.left = taskbarRect.left + (uEdge == ABE_LEFT ? 0 : MARGIN);
+		targetRect.right = taskbarRect.right - (uEdge == ABE_LEFT ? 2 : MARGIN);
 
 		int width = targetRect.right - targetRect.left;
 		int height = width > 70 ? 53 : 36;
 
-		targetRect.top = trayRect.bottom - height;
-		targetRect.bottom = trayRect.bottom;
+		targetRect.top = taskbarRect.bottom - height;
+		targetRect.bottom = taskbarRect.bottom;
 	}
 	else
 	{
-		targetRect.left = trayRect.right - 75;
-		targetRect.right = trayRect.right;
-		targetRect.top = trayRect.top + MARGIN;
-		targetRect.bottom = trayRect.bottom;
+		targetRect.left = taskbarRect.right - 75;
+		targetRect.right = taskbarRect.right;
+		targetRect.top = taskbarRect.top + MARGIN;
+		targetRect.bottom = taskbarRect.bottom;
 	}
 	SetWindowPos(HWND_TOP, &targetRect, SWP_SHOWWINDOW | SWP_NOOWNERZORDER | SWP_NOACTIVATE);
 }
@@ -105,7 +105,7 @@ LRESULT ClockWindow::OnLeftButtonUp(UINT uMsg, WPARAM wParam, LPARAM lParam, BOO
 	return 0;
 }
 
-void ClockWindow::MoveClockFlyout()
+void ClockWindow::MoveClockFlyout() const
 {
 	HWND flyout = ::FindWindowEx(nullptr, nullptr, L"ClockFlyoutWindow", nullptr);
 	if (flyout != nullptr)
@@ -117,14 +117,14 @@ void ClockWindow::MoveClockFlyout()
 
 		// TODO: correct positioning for LEFT/RIGHT taskbar
 
-		RECT trayRect;
-		::GetWindowRect(this->GetParent(), &trayRect);
+		RECT taskbarRect;
+		::GetWindowRect(this->GetParent(), &taskbarRect);
 
 		long flyoutHeight = flyoutRect.bottom - flyoutRect.top + FLYOUT_MARGIN;
 		long flyoutWidth = flyoutRect.right - flyoutRect.left + FLYOUT_MARGIN;
 
 		::SetWindowPos(flyout, nullptr,
-			trayRect.right - flyoutWidth, trayRect.top - flyoutHeight,
+			taskbarRect.right - flyoutWidth, taskbarRect.top - flyoutHeight,
 			0, 0, SWP_NOSIZE | SWP_NOZORDER);
 
 		::ShowWindow(flyout, SW_SHOW);
@@ -152,12 +152,12 @@ LRESULT ClockWindow::OnLeftButtonDown(UINT uMsg, WPARAM wParam, LPARAM lParam, B
 	return 0;
 }
 
-void ClockWindow::StartTrackingOn(HWND tray)
+void ClockWindow::StartTrackingOn(HWND taskbar)
 {
 	if (!isHighlighted)
 	{
 		trackMouseEventInfo.dwFlags = TME_LEAVE | TME_HOVER | TME_NONCLIENT;
-		trackMouseEventInfo.hwndTrack = tray;
+		trackMouseEventInfo.hwndTrack = taskbar;
 		if (::TrackMouseEvent(&trackMouseEventInfo))
 		{
 			isHighlighted = true;
@@ -215,11 +215,13 @@ LRESULT ClockWindow::OnMouseHover(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL&
 	LONG toolTipWidth = rc.right - rc.left;
 	LONG toolTipHeight = rc.bottom - rc.top;
 
-	RECT trayRect;
-	::GetWindowRect(this->GetParent(), &trayRect);
+	RECT taskbarRect;
+	::GetWindowRect(this->GetParent(), &taskbarRect);
 
-	LONG toolTipX = trayRect.right - toolTipWidth;
-	LONG toolTipY = trayRect.top - toolTipHeight;
+	GetTaskbarOrientation(this->GetParent());
+
+	LONG toolTipX = taskbarRect.right - toolTipWidth;
+	LONG toolTipY = taskbarRect.top - toolTipHeight;
 
 	::SendMessage(toolTipWindow, TTM_UPDATETIPTEXT, 0, (LPARAM)&toolTipInfo);
 	::SendMessage(toolTipWindow, TTM_TRACKPOSITION, 0, (LPARAM)MAKELONG(toolTipX, toolTipY));
@@ -281,10 +283,10 @@ LRESULT ClockWindow::OnInitMenu(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& b
 
 LRESULT ClockWindow::OnCreate(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
 {
-	HWND tray = this->GetParent();
-	HWND workerW = ::FindWindowEx(tray, nullptr, L"WorkerW", nullptr);
+	HWND taskbar = this->GetParent();
+	HWND workerW = ::FindWindowEx(taskbar, nullptr, TASKBAR_WORKER_CLASS, nullptr);
 	HWND clock = ClockWindow::GetOriginalClock();
-	::SetWindowSubclass(tray, ClockWindow::TaskbarSubclassProc, 0, (DWORD_PTR) this);
+	::SetWindowSubclass(taskbar, ClockWindow::TaskbarSubclassProc, 0, (DWORD_PTR) this);
 	::SetWindowSubclass(workerW, ClockWindow::WorkerWSubclassProc, 2, (DWORD_PTR) this);
 	::SetWindowSubclass(clock, ClockWindow::OriginalClockSubclassProc, 1, (DWORD_PTR) this);
 
@@ -295,10 +297,10 @@ LRESULT ClockWindow::OnCreate(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHa
 
 LRESULT ClockWindow::OnClose(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
 {
-	HWND tray = this->GetParent();
-	HWND workerW = ::FindWindowEx(tray, nullptr, L"WorkerW", nullptr);
+	HWND taskbar = this->GetParent();
+	HWND workerW = ::FindWindowEx(taskbar, nullptr, TASKBAR_WORKER_CLASS, nullptr);
 	HWND clock = ClockWindow::GetOriginalClock();
-	::RemoveWindowSubclass(tray, ClockWindow::TaskbarSubclassProc, 0);
+	::RemoveWindowSubclass(taskbar, ClockWindow::TaskbarSubclassProc, 0);
 	::RemoveWindowSubclass(workerW, ClockWindow::WorkerWSubclassProc, 2);
 	::RemoveWindowSubclass(clock, ClockWindow::OriginalClockSubclassProc, 1);
 	DestroyWindow();
@@ -387,7 +389,7 @@ LRESULT CALLBACK ClockWindow::TaskbarSubclassProc(HWND hWnd, UINT uMsg, WPARAM w
 		}
 		case WM_WINDOWPOSCHANGED:
 		{
-			clock->RepositionInTray(hWnd);
+			clock->RepositionIn(hWnd);
 			clock->Refresh();
 			break;
 		}
@@ -418,7 +420,7 @@ LRESULT CALLBACK ClockWindow::TaskbarSubclassProc(HWND hWnd, UINT uMsg, WPARAM w
 LRESULT CALLBACK ClockWindow::WorkerWSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData)
 {
 	ClockWindow* clock = (ClockWindow*)dwRefData;
-	HWND tray = clock->GetParent();
+	HWND taskbar = clock->GetParent();
 
 	switch (uMsg)
 	{
@@ -427,17 +429,17 @@ LRESULT CALLBACK ClockWindow::WorkerWSubclassProc(HWND hWnd, UINT uMsg, WPARAM w
 			WINDOWPOS* pos = (WINDOWPOS*)lParam;
 			if (!(pos->flags&SWP_NOMOVE) || !(pos->flags&SWP_NOSIZE))
 			{
-				RECT trayRect;
-				trayRect.left = pos->x;
-				trayRect.right = pos->x + pos->cx;
-				trayRect.top = pos->y;
-				trayRect.bottom = pos->y + pos->cy;
+				RECT taskbarRect;
+				taskbarRect.left = pos->x;
+				taskbarRect.right = pos->x + pos->cx;
+				taskbarRect.top = pos->y;
+				taskbarRect.bottom = pos->y + pos->cy;
 
 				RECT clockRect;
 				::GetClientRect(*clock, &clockRect);
-				::MapWindowPoints(*clock, tray, (LPPOINT)&clockRect, 2);
+				::MapWindowPoints(*clock, taskbar, (LPPOINT)&clockRect, 2);
 			
-				UINT uEdge = GetTaskbarOrientation(tray);
+				UINT uEdge = GetTaskbarOrientation(taskbar);
 				if (uEdge == ABE_LEFT || uEdge == ABE_RIGHT)
 				{
 					pos->cy -= (clockRect.bottom - clockRect.top);
@@ -467,10 +469,10 @@ HWND ClockWindow::GetOriginalClock()
 {
 	if (!::IsWindow(GlobalClockWidget))
 	{
-		HWND tray = ::FindWindow(L"Shell_TrayWnd", L"");
-		HWND trayNotify = ::FindWindowEx(tray, nullptr, L"TrayNotifyWnd", L"");
+		HWND taskbar = ::FindWindow(TASKBAR_MAIN_CLASS, L"");
+		HWND taskbarNotify = ::FindWindowEx(taskbar, nullptr, TASKBAR_NOTIFICATION_AREA_CLASS, L"");
 		HWND clockWidget;
-		::EnumChildWindows(trayNotify, SearchClockWidget, (LPARAM)&clockWidget);
+		::EnumChildWindows(taskbarNotify, SearchClockWidget, (LPARAM)&clockWidget);
 		GlobalClockWidget = clockWidget;
 	}
 	return GlobalClockWidget;
