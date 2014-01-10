@@ -7,11 +7,11 @@ This Windows 8/8.1 (x64 only) shell extension displays an additional clock on ea
 0. Install the [Visual C++ Redistributable Packages for Visual Studio 2013](http://www.microsoft.com/en-us/download/details.aspx?id=40784)
 1. Copy MultiClock.exe and MultiClock.dll in some folder you remember.
 2. Execute MultiClock.exe.
-3. A clock icon should appear in your _systray_.
+3. A clock icon should appear in your _notification area_.
 
 ## Uninstall
 
-1. Stop MultiClock by clicking on the clock icon in your _systray_.
+1. Stop MultiClock by clicking on the clock icon in your _notification area_.
 2. Remove MultiClock.exe and MultiClock.dll from your system.
 
 ## Troubleshooting
