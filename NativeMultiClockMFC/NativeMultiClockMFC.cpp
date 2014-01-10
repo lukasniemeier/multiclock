@@ -32,7 +32,7 @@ bool TerminateOtherInstance()
 	HWND other = ::FindWindow(nullptr, HIDDEN_DIALOG_WINDOW_TEXT);
 	if (other != nullptr)
 	{
-		::SendMessage(other, WM_CLOSE, 0x0, 0x0);
+		::SendMessage(other, WM_DESTROY, 0x0, 0x0);
 		// Wait for the other process to terminate
 		Sleep(5000);
 	}
@@ -41,7 +41,7 @@ bool TerminateOtherInstance()
 	{
 		::MessageBox(NULL, L"Sorry but the other instance seems to be still running.\nPlease use the task manager to close all instances.", 
 			L"Error", MB_OK | MB_ICONERROR);
-		return true;
+		return false;
 	}
 	return true;
 }
@@ -89,39 +89,16 @@ CWnd* CNativeMultiClockMFCApp::CreateNotificationDialog()
 	HMODULE hInstance = GetModuleHandle(nullptr);
 
 	HiddenDialog* dialog = new HiddenDialog();
-	dialog->Create(dialog->IDD);
-	dialog->SetWindowText(HIDDEN_DIALOG_WINDOW_TEXT);
-
-	::ZeroMemory(&notificationData, sizeof(NOTIFYICONDATA));
-	notificationData.cbSize = sizeof(NOTIFYICONDATA);
-	notificationData.uID = 42;
-	notificationData.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
-	notificationData.hIcon = (HICON)LoadImage(hInstance,
-		MAKEINTRESOURCE(IDI_ICON1),
-		IMAGE_ICON,
-		GetSystemMetrics(SM_CXSMICON),
-		GetSystemMetrics(SM_CYSMICON),
-		LR_DEFAULTCOLOR);
-	wsprintf(notificationData.szTip, L"MultiClock");
-	notificationData.hWnd = dialog->m_hWnd;
-	notificationData.uCallbackMessage = WM_CUSTOM_TRAY_ICON;
-
-	if (!::Shell_NotifyIcon(NIM_ADD, &notificationData))
+	if (!dialog->Create(dialog->IDD))
 	{
-		MessageBox(nullptr, L"Unable to set up notification area icon.", L"Error", MB_ICONERROR);
 		return nullptr;
 	}
-
-	if (notificationData.hIcon && ::DestroyIcon(notificationData.hIcon))
-	{
-		notificationData.hIcon = NULL;
-	}
+	dialog->SetWindowText(HIDDEN_DIALOG_WINDOW_TEXT);
 
 	return dialog;
 }
 
 int CNativeMultiClockMFCApp::ExitInstance()
 {
-	Shell_NotifyIcon(NIM_DELETE, &notificationData);
 	return Unhook() && CWinApp::ExitInstance();
 }

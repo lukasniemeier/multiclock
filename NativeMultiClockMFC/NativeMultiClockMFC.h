@@ -20,8 +20,6 @@ public:
 
 protected:
 	CWnd* CreateNotificationDialog();
-
-	NOTIFYICONDATA notificationData; 
 	HANDLE appMutex;
 
 public:
