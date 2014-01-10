@@ -3,6 +3,7 @@
 
 using namespace Gdiplus;
 
+#ifdef _DEBUG
 static void SaveBitmap(Bitmap* bitmap)
 {
 	CLSID guid;
@@ -14,6 +15,7 @@ static void SaveBitmap(Bitmap* bitmap)
 		Beep(200, 100);
 	}
 }
+#endif
 
 static std::wstring TextTime(SYSTEMTIME& time, DWORD flag, LPCWSTR format = nullptr)
 {
@@ -252,6 +254,5 @@ void ClockWindow::Refresh(bool force)
 	::DeleteDC(hDC);
 	::ReleaseDC(NULL, hdcScreen);
 
-	SaveBitmap(bitmap);
 	delete bitmap;
 }
