@@ -18,12 +18,12 @@ This Windows 8/8.1 (x64 only) shell extension displays an additional clock on ea
 
 * I get a _System Error_ stating that I'm missing _mfc120u.dll_!
   1. I told you to install the [Visual C++ Redistributable Packages for Visual Studio 2013](http://www.microsoft.com/en-us/download/details.aspx?id=40784)!
-* There is no clock icon in my _systray_!
+* There is no clock icon in my _notification area_!
   1. Is MultiClock.exe running? Check the Task Manager.
   2. Is there some error popup when starting MultiClock.exe?
 * I'm seeing the clock icon but nothing happens...
   1. Do you have at least one secondary taskbar? Check your _Taskbar and Navigation properties_.
-  2. Right-Click on the clock icon and check how many clocks MultiClock is displaying.
+  2. Hover the clock icon and check how many clocks MultiClock is displaying.
 * My explorer.exe keeps restarting when executing MultiClock!
   1. Should not happen, you've found a bug!
 
