@@ -77,12 +77,19 @@ protected:
 	void MoveClockFlyout() const;
 
 private:
+	static LONG64 CurrentSubclassProcId;
+
+	UINT_PTR taskbarSubclassProcId;
+	UINT_PTR workerWSubclassProcId;
+	UINT_PTR originalClockSubclassProcId;
+
 	ULONG_PTR gdiplusToken;
 	HWND toolTipWindow;
 	TOOLINFOW toolTipInfo;
 	TRACKMOUSEEVENT trackMouseEventInfo;
 	bool isHighlighted;
 	bool isClicked;
+
 
 protected:
 	static LRESULT CALLBACK TaskbarSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData);

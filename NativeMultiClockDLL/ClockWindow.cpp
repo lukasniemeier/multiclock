@@ -5,8 +5,14 @@
 #define FLYOUT_MARGIN 16
 #define WM_USER_SHOW_FLYOUT (WM_USER + 102)
 
+LONG64 ClockWindow::CurrentSubclassProcId = 0;
+
 ClockWindow::ClockWindow()
 {
+	taskbarSubclassProcId = ::InterlockedIncrement64(&CurrentSubclassProcId);
+	workerWSubclassProcId = ::InterlockedIncrement64(&CurrentSubclassProcId);
+	originalClockSubclassProcId = ::InterlockedIncrement64(&CurrentSubclassProcId);
+
 	toolTipWindow = nullptr;
 	isHighlighted = false;
 	isClicked = false;
@@ -290,9 +296,9 @@ LRESULT ClockWindow::OnCreate(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHa
 	HWND taskbar = this->GetParent();
 	HWND workerW = ::FindWindowEx(taskbar, nullptr, TASKBAR_WORKER_CLASS, nullptr);
 	HWND clock = ClockWindow::GetOriginalClock();
-	::SetWindowSubclass(taskbar, ClockWindow::TaskbarSubclassProc, 0, (DWORD_PTR) this);
-	::SetWindowSubclass(workerW, ClockWindow::WorkerWSubclassProc, 2, (DWORD_PTR) this);
-	::SetWindowSubclass(clock, ClockWindow::OriginalClockSubclassProc, 1, (DWORD_PTR) this);
+	::SetWindowSubclass(taskbar, ClockWindow::TaskbarSubclassProc, taskbarSubclassProcId, (DWORD_PTR) this);
+	::SetWindowSubclass(workerW, ClockWindow::WorkerWSubclassProc, workerWSubclassProcId, (DWORD_PTR) this);
+	::SetWindowSubclass(clock, ClockWindow::OriginalClockSubclassProc, originalClockSubclassProcId, (DWORD_PTR) this);
 
 	int val = 1;
 	DwmSetWindowAttribute(m_hWnd, DWMWA_EXCLUDED_FROM_PEEK, &val, sizeof(val));
@@ -304,9 +310,9 @@ LRESULT ClockWindow::OnClose(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHan
 	HWND taskbar = this->GetParent();
 	HWND workerW = ::FindWindowEx(taskbar, nullptr, TASKBAR_WORKER_CLASS, nullptr);
 	HWND clock = ClockWindow::GetOriginalClock();
-	::RemoveWindowSubclass(taskbar, ClockWindow::TaskbarSubclassProc, 0);
-	::RemoveWindowSubclass(workerW, ClockWindow::WorkerWSubclassProc, 2);
-	::RemoveWindowSubclass(clock, ClockWindow::OriginalClockSubclassProc, 1);
+	::RemoveWindowSubclass(taskbar, ClockWindow::TaskbarSubclassProc, taskbarSubclassProcId);
+	::RemoveWindowSubclass(workerW, ClockWindow::WorkerWSubclassProc, workerWSubclassProcId);
+	::RemoveWindowSubclass(clock, ClockWindow::OriginalClockSubclassProc, originalClockSubclassProcId);
 	DestroyWindow();
 	bHandled = FALSE;
 	return 0;

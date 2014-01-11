@@ -204,7 +204,12 @@ bool ClockWindow::IsVisible(const RECT& clientRect)
 	RECT intersectRect;
 	::IntersectRect(&intersectRect, &clip, &inParentRect);
 
-	return !::IsRectEmpty(&intersectRect);
+	bool isVisible = !::IsRectEmpty(&intersectRect);
+	if (!isVisible)
+	{
+		Beep(200, 100);
+	}
+	return isVisible;
 }
 
 void ClockWindow::Refresh(bool force)
@@ -212,10 +217,10 @@ void ClockWindow::Refresh(bool force)
 	RECT clientRect;
 	GetClientRect(&clientRect);
 
-	if (!force && !IsVisible(clientRect))
+	/*if (!force && !IsVisible(clientRect))
 	{
 		return;
-	}
+	}*/
 
 	int width = clientRect.right - clientRect.left;
 	int height = clientRect.bottom - clientRect.top;
