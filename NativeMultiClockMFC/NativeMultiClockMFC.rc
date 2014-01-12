@@ -137,7 +137,7 @@ BEGIN
         BLOCK "040904b0"
         BEGIN
             VALUE "CompanyName", "Lukas Niemeier"
-            VALUE "FileDescription", "MultiClock"
+            VALUE "FileDescription", "MultiClock Shell Extension"
             VALUE "FileVersion", "1.0.0.1"
             VALUE "InternalName", "MultiClock.exe"
             VALUE "LegalCopyright", "Lukas Niemeier.  All rights reserved."

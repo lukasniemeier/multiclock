@@ -3,12 +3,6 @@
 #include "afxdialogex.h"
 #include "NativeMultiClockMFC.h"
 
-#include "HiddenDialog.h"
-#include "Hook.h"
-
-#include <Shellapi.h>
-#include <Shlwapi.h>
-
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -73,10 +67,18 @@ BOOL CNativeMultiClockMFCApp::InitInstance()
 	commonControls.dwICC = ICC_STANDARD_CLASSES | ICC_WIN95_CLASSES;
 	InitCommonControlsEx(&commonControls);
 
+	
 	CWinApp::InitInstance();
 	EnableTaskbarInteraction(FALSE);
 
-	m_pMainWnd = CreateNotificationDialog();
+	//HiddenDialog* dialog = new HiddenDialog();
+	if (!dialog.Create(dialog.IDD))
+	{
+		return FALSE;
+	}
+	dialog.SetWindowText(HIDDEN_DIALOG_WINDOW_TEXT);
+
+	m_pMainWnd = &dialog;
 	if (m_pMainWnd == nullptr)
 	{
 		return FALSE;
@@ -84,21 +86,12 @@ BOOL CNativeMultiClockMFCApp::InitInstance()
 	return Hook();
 }
 
-CWnd* CNativeMultiClockMFCApp::CreateNotificationDialog()
-{
-	HMODULE hInstance = GetModuleHandle(nullptr);
-
-	HiddenDialog* dialog = new HiddenDialog();
-	if (!dialog->Create(dialog->IDD))
-	{
-		return nullptr;
-	}
-	dialog->SetWindowText(HIDDEN_DIALOG_WINDOW_TEXT);
-
-	return dialog;
-}
-
 int CNativeMultiClockMFCApp::ExitInstance()
 {
-	return Unhook() && CWinApp::ExitInstance();
+	BOOL unhooked = Unhook();
+	if (unhooked == FALSE)
+	{
+		::MessageBox(nullptr, L"Removing the additional clocks failed.", L"Error", MB_OK);
+	}
+	return CWinApp::ExitInstance();
 }

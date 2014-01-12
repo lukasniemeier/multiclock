@@ -404,13 +404,13 @@ LRESULT CALLBACK ClockWindow::TaskbarSubclassProc(HWND hWnd, UINT uMsg, WPARAM w
 			break;
 		}
 		case WM_WINDOWPOSCHANGED:
-		{
 			clock->RepositionIn(hWnd);
+			break;
+		case WM_PAINT:
 			clock->Refresh();
 			break;
-		}
 		case WM_TIMECHANGE:
-		clock->Refresh();
+			clock->Refresh();
 		break;
 		case WM_INITMENU:
 		{

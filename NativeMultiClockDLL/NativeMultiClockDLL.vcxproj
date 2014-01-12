@@ -76,6 +76,7 @@
       <PreprocessorDefinitions>WIN32;PROJECT_TARGETNAME="$(TargetName)";_DEBUG;_WINDOWS;_USRDLL;NATIVEMULTICLOCKDLL_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <EnablePREfast>false</EnablePREfast>
+      <PreprocessToFile>false</PreprocessToFile>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>

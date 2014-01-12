@@ -8,6 +8,12 @@
 
 #define WM_CUSTOM_TRAY_ICON (WM_USER + 42)
 
+#include "HiddenDialog.h"
+#include "Hook.h"
+
+#include <Shellapi.h>
+#include <Shlwapi.h>
+
 
 class CNativeMultiClockMFCApp : public CWinApp
 {
@@ -19,8 +25,8 @@ public:
 	virtual int ExitInstance();
 
 protected:
-	CWnd* CreateNotificationDialog();
 	HANDLE appMutex;
+	HiddenDialog dialog;
 
 public:
 	DECLARE_MESSAGE_MAP()

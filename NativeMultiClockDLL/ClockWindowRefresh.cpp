@@ -198,29 +198,47 @@ bool ClockWindow::IsVisible(const RECT& clientRect)
 	int result = ::GetClipBox(parent, &clip);
 	::ReleaseDC(this->GetParent(), parent);
 
-	RECT inParentRect(clientRect);
-	MapWindowPoints(this->GetParent(), &inParentRect);
+	bool isVisible;
+	switch (result)
+	{
+	case SIMPLEREGION:
+	case COMPLEXREGION:
+		{
+			OUTPUT_DEBUG_STRING(L"Clock is partially or fully visible");
+			RECT inParentRect(clientRect);
+			MapWindowPoints(this->GetParent(), &inParentRect);
 
-	RECT intersectRect;
-	::IntersectRect(&intersectRect, &clip, &inParentRect);
+			RECT intersectRect;
+			::IntersectRect(&intersectRect, &clip, &inParentRect);
 
-	bool isVisible = !::IsRectEmpty(&intersectRect);
+			isVisible = !::IsRectEmpty(&intersectRect);
+		}
+		break;
+	case NULLREGION:
+	default:
+		OUTPUT_DEBUG_STRING(L"Clock is completly covered");
+		isVisible = false;
+		break;
+	}
+
 	if (!isVisible)
 	{
-		Beep(200, 100);
+		OUTPUT_DEBUG_STRING(L"Clock not visible, ignoring refresh request.");
 	}
 	return isVisible;
 }
 
 void ClockWindow::Refresh(bool force)
 {
+	OUTPUT_DEBUG_STRING(L"Clock refresh requested. Force =", force);
+
 	RECT clientRect;
 	GetClientRect(&clientRect);
 
-	/*if (!force && !IsVisible(clientRect))
+	if (!force && !IsVisible(clientRect))
 	{
 		return;
-	}*/
+	}
 
 	int width = clientRect.right - clientRect.left;
 	int height = clientRect.bottom - clientRect.top;
@@ -260,4 +278,6 @@ void ClockWindow::Refresh(bool force)
 	::ReleaseDC(NULL, hdcScreen);
 
 	delete bitmap;
+
+	OUTPUT_DEBUG_STRING(L"Clock has been refreshed.");
 }
