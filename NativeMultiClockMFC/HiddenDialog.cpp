@@ -123,8 +123,10 @@ afx_msg LRESULT HiddenDialog::OnTaskbarCreated(WPARAM wParam, LPARAM lParam)
 		if (result == IDCANCEL)
 		{
 			DestroyWindow();
+			return 0;
 		}
 	}
+	Hook();
 	return 0;
 }
 
