@@ -193,39 +193,7 @@ void ClockWindow::RenderHighlighting(Graphics* graphics, int width, int height) 
 
 bool ClockWindow::IsVisible(const RECT& clientRect)
 {
-	HDC parent = ::GetDC(this->GetParent());
-	RECT clip;
-	int result = ::GetClipBox(parent, &clip);
-	::ReleaseDC(this->GetParent(), parent);
-
-	bool isVisible;
-	switch (result)
-	{
-	case SIMPLEREGION:
-	case COMPLEXREGION:
-		{
-			OUTPUT_DEBUG_STRING(L"Clock is partially or fully visible");
-			RECT inParentRect(clientRect);
-			MapWindowPoints(this->GetParent(), &inParentRect);
-
-			RECT intersectRect;
-			::IntersectRect(&intersectRect, &clip, &inParentRect);
-
-			isVisible = !::IsRectEmpty(&intersectRect);
-		}
-		break;
-	case NULLREGION:
-	default:
-		OUTPUT_DEBUG_STRING(L"Clock is completly covered");
-		isVisible = false;
-		break;
-	}
-
-	if (!isVisible)
-	{
-		OUTPUT_DEBUG_STRING(L"Clock not visible, ignoring refresh request.");
-	}
-	return isVisible;
+	return true;
 }
 
 void ClockWindow::Refresh(bool force)
