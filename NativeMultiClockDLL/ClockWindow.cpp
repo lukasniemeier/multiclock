@@ -328,14 +328,11 @@ LRESULT CALLBACK ClockWindow::OriginalClockSubclassProc(HWND hWnd, UINT uMsg, WP
 {
 	switch (uMsg)
 	{
-		case WM_TIMER:
-		if (wParam == 0x0)
-		{
-			((ClockWindow*)dwRefData)->Refresh();
-		}
+	case WM_PAINT:
+		((ClockWindow*)dwRefData)->Refresh();
 		break;
-		case WM_NCDESTROY:
-		::RemoveWindowSubclass(hWnd, ClockWindow::OriginalClockSubclassProc, uIdSubclass);
+	case WM_NCDESTROY:
+	::RemoveWindowSubclass(hWnd, ClockWindow::OriginalClockSubclassProc, uIdSubclass);
 		break;
 	}
 
